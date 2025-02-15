@@ -282,8 +282,8 @@ def init_demo() -> dict:
     else: partner = utils.get_demo_partner_host()
 
     if self_ref != None:
-        self_ref = utils.set_demo_partner_host(self_ref)
-    else: self_ref = utils.get_demo_partner_host()
+        self_ref = utils.set_self_host(self_ref)
+    else: self_ref = utils.get_self_host()
 
     return {
         'msg': 'This action is used to update/confirm demo settings and is not part of the CTF. Output from this action should contain the same PSK on both the primary and partner systems, with each partner parameter as the opposite partner hostname',
