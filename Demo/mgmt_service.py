@@ -199,7 +199,8 @@ def list_partner_documents() -> dict:
         ret = requests.post(f'{partner_url}/ctrl/documents/public', allow_redirects=True,
                             headers={'Content-Type': 'application/json', 'Authorization': token}, json=json_body)
         
-        if ret.status_code != 200: raise Exception
+        #if ret.status_code != 200: raise Exception
+        bottle.response.status = ret.status_code
         content = ret.content
         #if content == None: raise Exception
     
