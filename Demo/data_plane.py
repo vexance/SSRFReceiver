@@ -45,6 +45,11 @@ def submit_ctf(submit_hash: str):
         return {'success': True, 'msg': 'CTF Complete!'}
 
 
+@data_plane.route('/healthcheck', method='GET')
+def healthcheck():
+    return 'healthy'
+
+
 
 @data_plane.route('/', method='GET')
 @data_plane.route('/', method='POST')
