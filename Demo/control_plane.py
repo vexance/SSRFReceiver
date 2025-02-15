@@ -272,6 +272,11 @@ def syn_ack(syn_id: str) -> dict:
 
 
 
+@control_plane.route('/healthcheck', method='GET')
+def healthcheck():
+    return 'healthy'
+
+
 @control_plane.route('/', method='GET')
 @control_plane.route('/', method='POST')
 @control_plane.route('/<url:re:.+>', method='GET')
@@ -287,18 +292,18 @@ def default_route(url: str = None) -> dict:
 
 
 
-@mgmt_api.route('/', method='TRACE')
-@mgmt_api.route('/', method='PUT')
-@mgmt_api.route('/', method='DELETE')
-@mgmt_api.route('/', method='HEAD')
-@mgmt_api.route('/', method='PATCH')
-@mgmt_api.route('/', method='CONNECT')
-@mgmt_api.route('/<url:re:.+>', method='TRACE')
-@mgmt_api.route('/<url:re:.+>', method='PUT')
-@mgmt_api.route('/<url:re:.+>', method='DELETE')
-@mgmt_api.route('/<url:re:.+>', method='HEAD')
-@mgmt_api.route('/<url:re:.+>', method='PATCH')
-@mgmt_api.route('/<url:re:.+>', method='CONNECT')
+@control_plane.route('/', method='TRACE')
+@control_plane.route('/', method='PUT')
+@control_plane.route('/', method='DELETE')
+@control_plane.route('/', method='HEAD')
+@control_plane.route('/', method='PATCH')
+@control_plane.route('/', method='CONNECT')
+@control_plane.route('/<url:re:.+>', method='TRACE')
+@control_plane.route('/<url:re:.+>', method='PUT')
+@control_plane.route('/<url:re:.+>', method='DELETE')
+@control_plane.route('/<url:re:.+>', method='HEAD')
+@control_plane.route('/<url:re:.+>', method='PATCH')
+@control_plane.route('/<url:re:.+>', method='CONNECT')
 def method_not_supported(url: str = None):
     bottle.response.status = 405
     return None

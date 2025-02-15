@@ -296,6 +296,12 @@ def init_demo() -> dict:
     }
     
 
+@mgmt_api.route('/healthcheck', method='GET')
+def healthcheck():
+    return 'healthy'
+
+
+
 @mgmt_api.route('/', method='GET')
 @mgmt_api.route('/', method='POST')
 @mgmt_api.route('/<url:re:.+>', method='GET')
