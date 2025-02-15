@@ -238,6 +238,7 @@ def syn() -> dict:
         asyncio.run_coroutine_threadsafe(async_do_request(method=method, url=callback, headers=req_headers, req_body=req_body), background_event_loop)
 
     except Exception as err:
+        print(f'Synchronize Request Error: {err}')
         bottle.response.status = 500
         return {'error': 'An internal error occured.'}
 

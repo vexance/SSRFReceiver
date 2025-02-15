@@ -204,6 +204,7 @@ def list_partner_documents() -> dict:
         #if content == None: raise Exception
     
     except Exception as err:
+        print(f'ListPartnerDocuments Request Error: {err}')
         bottle.response.status = 500 # mark a different response code / message here from negotiation failure
         return {'error': 'Internal error encountered'}
     
@@ -246,6 +247,7 @@ def partner_sync() -> dict:
     try:
         asyncio.run_coroutine_threadsafe(async_do_request(method='POST', url=f'{partner_url}/ctrl/synchronize', headers=req_headers, req_body=req_body), background_event_loop)
     except Exception as err:
+        print(f'Synchronize Request Error: {err}')
         bottle.response.status = 500 # mark a different response code / message here from negotiation failure
         return {'error': 'Internal error encountered'}
     # END ASYNC BLOCK
