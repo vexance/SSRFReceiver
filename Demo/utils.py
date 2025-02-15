@@ -7,6 +7,7 @@ import datetime
 DEMO_DB_PATH = '/tmp/demo/demo.db'
 DEMO_PSK_PATH = '/tmp/demo/psk.txt'
 DEMO_PARTNER_URL_PATH = '/tmp/demo/partner.txt'
+DEMO_SELF_URL_PATH = '/tmp/demo/self.txt'
 DEMO_TMP_DIR = '/tmp/demo'
 DEMO_FILE_DIR = '/tmp/demo/docs/'
 UUID_REGEX = '^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$'
@@ -125,6 +126,24 @@ def set_demo_partner_host(host: str) -> str:
 def get_demo_partner_host() -> str:
     host = None
     with open(DEMO_PARTNER_URL_PATH, 'r') as file:
+        lines = [line for line in file.readlines()]
+        host = ''.join(lines).strip()
+
+    return host
+
+# Set partner URL
+def set_self_host(host: str) -> str:
+
+    with open(DEMO_SELF_URL_PATH, 'w') as file:
+        file.write(f'{host}\n')
+        
+    return host
+
+
+# Retrieve the partner URL
+def get_self_host() -> str:
+    host = None
+    with open(DEMO_SELF_URL_PATH, 'r') as file:
         lines = [line for line in file.readlines()]
         host = ''.join(lines).strip()
 

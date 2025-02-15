@@ -133,6 +133,7 @@ if __name__ == '__main__':
         pathlib.Path(utils.DEMO_FILE_DIR).mkdir(parents=True, exist_ok=True)
         pathlib.Path(utils.DEMO_DB_PATH).touch(exist_ok=True)
         pathlib.Path(utils.DEMO_PARTNER_URL_PATH).touch(exist_ok=True)
+        pathlib.Path(utils.DEMO_SELF_URL_PATH).touch(exist_ok=True)
         pathlib.Path(utils.DEMO_PSK_PATH).touch(exist_ok=True)
 
         print('Prepped demo temp directories and files')

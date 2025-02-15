@@ -207,7 +207,7 @@ def list_partner_documents() -> dict:
         bottle.response.status = 500 # mark a different response code / message here from negotiation failure
         return {'error': 'Internal error encountered'}
     
-    bottle.response.add_header('Content-Type': 'application/json')
+    bottle.response.add_header('Content-Type', 'application/json')
     return ret.content
 
 
@@ -239,18 +239,9 @@ def partner_sync() -> dict:
         return {'error': 'Invalid synchronization id, expected UUID format.'}
 
     token = sha256(sha384(utils.get_demo_psk().encode('utf-8')).hexdigest().encode('utf-8')).hexdigest()
-    host_header = bottle.request.get_header('Host')
-
-    # Trim out request URI authentication and service port if exists
-    at_idx = host_header.find('@')
-    colon_idx = host_header.find(':')
-    start = at_idx if (at_idx != -1) else 0
-    end = colon_idx if (colon_idx != -1) else len(host_header)
-
-    host_header = host_header[start:end]
     
     req_headers = {'Content-Type': 'application/json', 'Authorization': token}
-    req_body = body={'CallbackAddress': f'http://{host_header}:8080', 'SynchronizationId': syn_id, 'Message': msg, 'ParticipantId': utils.get_demo_psk(), 'QueryStart': str(datetime.datetime.now())}
+    req_body = body={'CallbackAddress': f'{utils.get_self_host()}', 'SynchronizationId': syn_id, 'Message': msg, 'ParticipantId': utils.get_demo_psk(), 'QueryStart': str(datetime.datetime.now())}
     # THIS NEEDS TO BE ASYNC
     try:
         asyncio.run_coroutine_threadsafe(async_do_request(method='POST', url=f'{partner_url}/ctrl/synchronize', headers=req_headers, req_body=req_body), background_event_loop)
@@ -276,9 +267,11 @@ def init_demo() -> dict:
     if body != None:
         psk = body.get('psk', None)
         partner = body.get('partner', None)
+        self_ref = body.get('self', None)
     else:
         psk = None
         partner = None
+        self_ref = None
 
     if psk != None:
         psk = utils.set_demo_psk(psk)
@@ -288,11 +281,15 @@ def init_demo() -> dict:
         partner = utils.set_demo_partner_host(partner)
     else: partner = utils.get_demo_partner_host()
 
+    if self_ref != None:
+        self_ref = utils.set_demo_partner_host(self_ref)
+    else: self_ref = utils.get_demo_partner_host()
 
     return {
         'msg': 'This action is used to update/confirm demo settings and is not part of the CTF. Output from this action should contain the same PSK on both the primary and partner systems, with each partner parameter as the opposite partner hostname',
         'psk': psk,
-        'partner': partner
+        'partner': partner,
+        'self': self_ref
     }
     
 
