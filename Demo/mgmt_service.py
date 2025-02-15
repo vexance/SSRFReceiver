@@ -200,15 +200,15 @@ def list_partner_documents() -> dict:
                             headers={'Content-Type': 'application/json', 'Authorization': token}, json=json_body)
         
         if ret.status_code != 200: raise Exception
-        content = json.loads(ret.content).get('Documents', None)
-        if content == None: raise Exception
+        
+        #if content == None: raise Exception
     
     except Exception as err:
         bottle.response.status = 500 # mark a different response code / message here from negotiation failure
         return {'error': 'Internal error encountered'}
     
 
-    return {'PartnerDocuments': content}
+    return ret.content
 
 
 # InitiatePartnerSynchronization
