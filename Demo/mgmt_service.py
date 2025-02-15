@@ -45,7 +45,7 @@ async def async_do_request(method: str, url: str, headers: str, req_body: str):
 
 
 # ListDocuments
-@mgmt_api.route('/mgmt/documents', method='GET')
+@mgmt_api.route('/documents', method='GET')
 def list_documents() -> str:
     authN = utils.authenticate(AUTH_TABLE, bottle.request.headers['Authorization'])
     if authN == False:
@@ -60,7 +60,7 @@ def list_documents() -> str:
 
 
 # GetDocument
-@mgmt_api.route('/mgmt/documents/<doc_id>', method='GET')
+@mgmt_api.route('/documents/<doc_id>', method='GET')
 def get_document(doc_id: str):
     authN = utils.authenticate(AUTH_TABLE, bottle.request.headers['Authorization'])
     if authN == False:
@@ -100,7 +100,7 @@ def get_document(doc_id: str):
 
 
 # ShareDocument
-@mgmt_api.route('/mgmt/documents/<doc_id>/share', method='GET')
+@mgmt_api.route('/documents/<doc_id>/share', method='GET')
 def enable_document_sharing(doc_id: str) -> dict:
     authN = utils.authenticate(AUTH_TABLE, bottle.request.headers['Authorization'])
     if authN == False:
@@ -132,7 +132,7 @@ def enable_document_sharing(doc_id: str) -> dict:
 
 
 # UnshareDocument
-@mgmt_api.route('/mgmt/documents/<doc_id>/unshare', method='GET')
+@mgmt_api.route('/documents/<doc_id>/unshare', method='GET')
 def disable_document_sharing(doc_id: str) -> dict: 
     authN = utils.authenticate(AUTH_TABLE, bottle.request.headers['Authorization'])
     if authN == False:
@@ -164,7 +164,7 @@ def disable_document_sharing(doc_id: str) -> dict:
 
 
 # ListPartnerDocuments
-@mgmt_api.route('/mgmt/partners/documents', method='POST')
+@mgmt_api.route('/partners/documents', method='POST')
 def list_partner_documents() -> dict:
     authN = utils.authenticate(AUTH_TABLE, bottle.request.headers['Authorization'])
     if authN == False:
@@ -212,7 +212,7 @@ def list_partner_documents() -> dict:
 
 
 # InitiatePartnerSynchronization
-@mgmt_api.route('/mgmt/partners/synchronize', method='POST')
+@mgmt_api.route('/partners/synchronize', method='POST')
 def partner_sync() -> dict:
     authN = utils.authenticate(AUTH_TABLE, bottle.request.headers['Authorization'])
     if authN == False:
@@ -264,8 +264,8 @@ def partner_sync() -> dict:
 
 
 # Unauthenticated to reset demo lab stuff
-@mgmt_api.route('/mgmt/init', method='POST')
-@mgmt_api.route('/mgmt/init', method='GET')
+@mgmt_api.route('/init', method='POST')
+@mgmt_api.route('/init', method='GET')
 def init_demo() -> dict:
     if bottle.request.method == "POST" and bottle.request.get_header('Content-Type') != 'application/json':
         bottle.response.status = 415  # Unsupported Media Type

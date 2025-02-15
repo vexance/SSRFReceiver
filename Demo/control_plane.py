@@ -45,7 +45,7 @@ async def async_do_request(method: str, url: str, headers: str, req_body: str):
     return None
 
 
-@control_plane.route('/ctrl/negotiate', method='POST')
+@control_plane.route('/negotiate', method='POST')
 def negotiate_token() -> dict:
     if bottle.request.get_header('Content-Type') != 'application/json':
         bottle.response.status = 415  # Unsupported Media Type
@@ -67,7 +67,7 @@ def negotiate_token() -> dict:
 
 
 
-@control_plane.route('/ctrl/documents/public', method='POST')
+@control_plane.route('/documents/public', method='POST')
 def list_public_docs() -> dict:
     authN = utils.authenticate(AUTH_TABLE, bottle.request.get_header('Authorization'))
     if authN == False:
@@ -81,7 +81,7 @@ def list_public_docs() -> dict:
 
 
 
-@control_plane.route('/ctrl/documents/public/<id>', method='POST')
+@control_plane.route('/documents/public/<id>', method='POST')
 def get_public_doc(doc_id: str) -> dict:
     authN = utils.authenticate(AUTH_TABLE, bottle.request.get_header('Authorization'))
     if authN == False:
@@ -121,7 +121,7 @@ def get_public_doc(doc_id: str) -> dict:
 
 
 # Intent is to have user perform a redirect
-@control_plane.route('/ctrl/documents', method='GET')
+@control_plane.route('/documents', method='GET')
 def list_all_docs() -> dict:
     auth_token = bottle.request.get_header('Authorization').strip()
     authN = utils.authenticate(AUTH_TABLE, auth_token)
@@ -145,7 +145,7 @@ def list_all_docs() -> dict:
 
 
 # Intent is to have the user perform a redirect
-@control_plane.route('/ctrl/documents/<doc_id>', method='GET')
+@control_plane.route('/documents/<doc_id>', method='GET')
 def get_doc(doc_id: str) -> dict:
     auth_token = bottle.request.get_header('Authorization').strip()
     authN = utils.authenticate(AUTH_TABLE, auth_token)
@@ -194,7 +194,7 @@ def get_doc(doc_id: str) -> dict:
 
 
 # Receive inbound request, issues callbak to /syn/ack
-@control_plane.route('/ctrl/synchronize', method='POST')
+@control_plane.route('/synchronize', method='POST')
 def syn() -> dict:
     auth_token = bottle.request.get_header('Authorization').strip()
     authN = utils.authenticate(AUTH_TABLE, auth_token)
@@ -245,7 +245,7 @@ def syn() -> dict:
 
 
 
-@control_plane.route('/ctrl/synchronize/<syn_id>/acknowledgement', method='POST')
+@control_plane.route('/synchronize/<syn_id>/acknowledgement', method='POST')
 def syn_ack(syn_id: str) -> dict:
     auth_token = bottle.request.get_header('Authorization').strip()
     authN = utils.authenticate(AUTH_TABLE, auth_token)
