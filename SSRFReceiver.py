@@ -128,6 +128,7 @@ def intercept(destination: str):
     try:
         res = requests.request(method, destination, headers=headers, json=body, proxies=INTERCEPT_PROXIES, verify=False)
         response.status = res.status_code
+        response.headers = res.headers
 
     except Exception as err:
         logger.warning(f'Exception thrown during interception relay: {err}')
@@ -136,7 +137,7 @@ def intercept(destination: str):
     logger.debug(f'Relayed response headers: {res.headers}')
     logger.debug(f'Relayed response body: {res.text}')
 
-    return res.text
+    return res.content
 
 
 # Return a response with the designated status code, setting Location header to trailing path
