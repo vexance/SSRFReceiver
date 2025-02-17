@@ -1,4 +1,4 @@
-Surf Receiver
+SSRF Receiver
 =============
 
 A pretty lightweight SSRF listener / proxy that is helpful for testing semi-blind and blind SSRF interactions.
