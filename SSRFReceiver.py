@@ -128,17 +128,17 @@ def intercept(destination: str):
     end = colon_idx if (colon_idx != -1) else len(target_host)
 
     headers['Host'] = target_host[start:end]
-    body = None
-    try:
-        body = json.loads(request.body.read().decode('utf-8'))
-    except Exception as err:
-        logger.debug(f'Error parsing intercepted request body: {err}')
+    # body = None
+    # try:
+    #     body = request.body
+    # except Exception as err:
+    #     logger.debug(f'Error parsing intercepted request body: {err}')
 
     method = request.method
 
     logger.info(f'Relaying to {target_host}')
     try:
-        res = requests.request(method, destination, query=request.query_string, headers=headers, json=body, proxies=INTERCEPT_PROXIES, verify=False)
+        res = requests.request(request.method, destination, query=request.query_string, headers=request.headers, body=request.body, proxies=INTERCEPT_PROXIES, verify=False)
         response.status = res.status_code
         response.headers = res.headers
 
