@@ -142,6 +142,10 @@ def intercept(destination: str):
         response.status = res.status_code
         response.headers = res.headers
 
+        for key, value in res.headers.items():
+            response.set_header(key, value)
+
+
     except Exception as err:
         logger.warning(f'Exception thrown during interception relay: {err}')
         return 'failure'
