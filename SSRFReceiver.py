@@ -32,8 +32,8 @@ def log_request(msg: str) -> None:
 # Global config vars
 CATCH_ALL_STATUS = 200
 CATCH_ALL_MESSAGE = 'CatchAll'
-STATIC_INTERCEPT_TARGET = 'https://login.microsoftonline.com/1bac0a47-ac0e-4c62-91b9-9780a664b113/oauth2/v2.0/token'
-STATIC_REDIRECT_TARET = 'http://169.254.169.254/latest/user-data/'
+STATIC_INTERCEPT_TARGET = 'UPDATE_STATIC_INTERCEPT_TARGET'
+STATIC_REDIRECT_TARET = 'UPDATE_STATIC_REDIRECT_TARGET'
 INTERCEPT_PROXIES = {}
 logger = None
 
