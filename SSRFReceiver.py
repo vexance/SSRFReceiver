@@ -116,9 +116,10 @@ def intercept(destination: str):
     headers = dict(request.headers)
 
     if destination == 'static':
-        target_host = STATIC_INTERCEPT_TARGET
-    else:
-        target_host = destination.split('/')[2]
+        logger.info(f'Using static intercept target: {STATIC_INTERCEPT_TARGET}')
+        destination = STATIC_INTERCEPT_TARGET
+    
+    target_host = destination.split('/')[2]
 
     # Trim out request URI authentication and service port if exists
     at_idx = target_host.find('@')
@@ -165,6 +166,7 @@ def response_status(status: int, path: str = None):
         response.status = status
         if path != None:
             if path == 'static':
+                logger.info(f'Using static redirect target: {STATIC_REDIRECT_TARET}')
                 response.set_header('Location', STATIC_REDIRECT_TARET)
             else: response.set_header('Location', path)
     except Exception as err:
