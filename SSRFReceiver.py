@@ -138,7 +138,7 @@ def intercept(destination: str):
 
     logger.info(f'Relaying to {target_host}')
     try:
-        res = requests.request(request.method, destination, query=request.query_string, headers=request.headers, body=request.body, proxies=INTERCEPT_PROXIES, verify=False)
+        res = requests.request(request.method, f'{destination}?{request.query_string}', headers=request.headers, body=request.body, proxies=INTERCEPT_PROXIES, verify=False)
         response.status = res.status_code
         response.headers = res.headers
 
