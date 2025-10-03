@@ -1,11 +1,13 @@
 import bottle
-from re import match as regex_match
 import requests
-from hashlib import sha256, sha384
-import utils
 import datetime
 import asyncio
 import threading
+
+from re import match as regex_match
+from hashlib import sha256, sha384
+
+import Backend.utils as utils
 
 AUTH_TABLE = 'cp_auth'
 MGMT_AUTH_TABLE = 'mgmt_auth'
@@ -310,5 +312,3 @@ def method_not_supported(url: str = None):
     return None
 
 
-
-control_plane.run(host='0.0.0.0', port=8080)

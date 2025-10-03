@@ -1,7 +1,8 @@
 import bottle
-import utils
+
 from hashlib import sha256, sha384
-from re import match as regex_match
+
+import Backend.utils as utils
 
 data_plane = bottle.Bottle()
 
@@ -77,7 +78,4 @@ def method_not_supported(url: str = None):
     return None
 
 
-
-
-data_plane.run(host='127.0.0.1', port='8888')
 

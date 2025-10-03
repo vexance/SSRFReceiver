@@ -2,7 +2,8 @@ import sqlite3
 import uuid
 import argparse
 import pathlib
-import utils
+
+import Backend.utils as utils
 
 DEMO_PSK = None
 NODE_PRIMARY = None
@@ -119,13 +120,14 @@ def prep_node() -> None:
     conn.close()
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser('demo_setup.py', 'Setup for demo')
-    parser.add_argument('--psk', type=str, required=False, default=None, help='Set the PSK for the secondary node launched')
-    args = parser.parse_args()
+def do_setup(psk: str | None):
 
-    NODE_PRIMARY = (args.psk == None)
-    DEMO_PSK = str(uuid.uuid4()) if NODE_PRIMARY else args.psk
+    global NODE_MGMT_TOKEN
+    global NODE_PRIMARY
+    global DEMO_PSK
+    
+    NODE_PRIMARY = (psk == None)
+    DEMO_PSK = str(uuid.uuid4()) if NODE_PRIMARY else psk
 
     NODE_MGMT_TOKEN = str(uuid.uuid4())
 
@@ -149,3 +151,12 @@ if __name__ == '__main__':
 
     create_tables()
     prep_node()
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser('demo_setup.py', 'Setup for demo')
+    parser.add_argument('--psk', type=str, required=False, default=None, help='Set the PSK for the secondary node launched')
+    args = parser.parse_args()
+
+    do_setup(args.psk)
+

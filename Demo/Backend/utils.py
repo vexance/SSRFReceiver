@@ -45,9 +45,9 @@ def authenticate(table: str, token: str) -> bool:
     token = token.strip()
     if not regex_match(UUID_REGEX, token): return False
     if table not in ['mgmt_auth', 'cp_auth', 'dp_auth']: return False
-
-    ret = query(f'SELECT expiration FROM {table} WHERE token = "{token}";')
     
+    ret = query(f'SELECT expiration FROM {table} WHERE token = "{token}";')
+
     # No matching auth token
     if len(ret) < 1: return False
     

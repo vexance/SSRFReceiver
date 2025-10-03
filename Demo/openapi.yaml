@@ -1,0 +1,573 @@
+openapi: 3.1.0
+info:
+  title: SecNotes Demo APIs
+  version: 1.0.0
+  description: |
+    OpenAPI specification for the SecNotes demo Control Plane, Data Plane, and Management APIs.
+    Notes:
+    - These services are typically mounted as:
+        • Control Plane at `/ctrl`
+        • Data Plane at `/data`
+        • Management API at `/mgmt`
+    - All authentication is via an `Authorization` header token/hash (not standard Bearer).
+servers:
+  - url: "{scheme}://127.0.0.1:8000"
+    variables:
+      scheme:
+        default: http
+        enum:
+          - http
+          - https
+
+tags:
+  - name: ControlPlane
+  - name: DataPlane
+  - name: Management
+
+components:
+  securitySchemes:
+    AuthHeader:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: |
+        Raw token/hash in the `Authorization` header. Not a standard "Bearer" token.
+  schemas:
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+      required: [error]
+    DocumentId:
+      type: string
+      description: Document UUID as string
+      example: "5efc2a8e-1b7e-4c64-8b1e-6a1f5b9bbf2b"
+    DocumentSummary:
+      type: object
+      properties:
+        DocumentId: { $ref: '#/components/schemas/DocumentId' }
+      required: [DocumentId]
+    DocumentsList:
+      type: object
+      properties:
+        Documents:
+          type: array
+          items: { $ref: '#/components/schemas/DocumentSummary' }
+        QueryFinish:
+          type: string
+          description: ISO-like timestamp string
+      required: [Documents]
+    DocumentMetadata:
+      type: object
+      properties:
+        DocumentId: { $ref: '#/components/schemas/DocumentId' }
+        Title: { type: string }
+        Author: { type: string }
+        FileType: { type: string }
+        Shared: { type: boolean }
+      required: [DocumentId, Title, Author, FileType, Shared]
+    DocumentWithDownload:
+      allOf:
+        - $ref: '#/components/schemas/DocumentMetadata'
+        - type: object
+          properties:
+            DownloadReference:
+              type: string
+              description: Deterministic hash used to download from Data Plane
+              example: "c9f6d1e6b1f1e9b2c2a1a0b9f8e7d6c5b4a392817161514131211100f0e0d0c"
+    PartnerDocumentsRequest:
+      type: object
+      properties:
+        PartnerUrl:
+          type: string
+          format: uri
+      required: [PartnerUrl]
+    PartnerDocumentsProxyResponse:
+      description: Raw proxied JSON from partner; structure may vary.
+      oneOf:
+        - $ref: '#/components/schemas/DocumentsList'
+        - type: object # fallback
+    PartnerSyncRequest:
+      type: object
+      properties:
+        PartnerUrl: { type: string, format: uri }
+        SynchronizationMessage: { type: string }
+        SynchronizationId:
+          type: string
+          description: UUID for synchronization
+          example: "2c1b5f39-4c1a-451f-9b9f-2a5d5b7c3ea1"
+      required: [PartnerUrl, SynchronizationMessage, SynchronizationId]
+    ControlSyncRequest:
+      type: object
+      properties:
+        CallbackAddress: { type: string, format: uri }
+        SynchronizationId:
+          type: string
+          description: UUID for synchronization
+      required: [CallbackAddress, SynchronizationId]
+    ControlSyncAckBody:
+      type: object
+      properties:
+        AcknowledgementMessage: { type: string }
+      required: [AcknowledgementMessage]
+    InitRequest:
+      type: object
+      properties:
+        psk: { type: string, nullable: true }
+        partner: { type: string, format: uri, nullable: true }
+        self: { type: string, format: uri, nullable: true }
+    InitResponse:
+      type: object
+      properties:
+        msg: { type: string }
+        psk: { type: string }
+        partner: { type: string, format: uri }
+        self: { type: string, format: uri }
+      required: [msg, psk, partner, self]
+
+paths:
+  # ----------------------
+  # Control Plane (/ctrl)
+  # ----------------------
+  /ctrl/negotiate:
+    post:
+      tags: [ControlPlane]
+      summary: Negotiate auth token
+      description: Exchange a pre-shared key hash for a temporary control-plane token.
+      security:
+        - AuthHeader: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Token issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                required: [token]
+        '403':
+          description: Authentication failed
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+        '415':
+          description: Content-Type must be application/json (if provided)
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
+  /ctrl/documents/public:
+    post:
+      tags: [ControlPlane]
+      summary: List public documents
+      security:
+        - AuthHeader: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Public docs
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DocumentsList' }
+        '403': { description: Authentication failed, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /ctrl/documents/public/{doc_id}:
+    post:
+      tags: [ControlPlane]
+      summary: Get public document metadata
+      security:
+        - AuthHeader: []
+      parameters:
+        - name: doc_id
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/DocumentId' }
+      responses:
+        '200':
+          description: Document metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  DocumentMetadata: { $ref: '#/components/schemas/DocumentMetadata' }
+                  QueryFinish: { type: string }
+                required: [DocumentMetadata]
+        '400': { description: Invalid document identifier, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: Authentication failed, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: Document not found, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /ctrl/documents:
+    get:
+      tags: [ControlPlane]
+      summary: List all documents (privileged)
+      description: Requires a privileged control-plane token (derived from PSK).
+      security:
+        - AuthHeader: []
+      responses:
+        '200':
+          description: All documents
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Documents:
+                    type: array
+                    items: { $ref: '#/components/schemas/DocumentSummary' }
+                required: [Documents]
+        '403': { description: Not authorized or authentication failed, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /ctrl/documents/{doc_id}:
+    get:
+      tags: [ControlPlane]
+      summary: Get document (privileged)
+      description: Returns full metadata, including DownloadReference (for Data Plane).
+      security:
+        - AuthHeader: []
+      parameters:
+        - name: doc_id
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/DocumentId' }
+      responses:
+        '200':
+          description: Document
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DocumentWithDownload' }
+        '400': { description: Invalid document identifier, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: Not authorized or authentication failed, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: Document not found, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /ctrl/synchronize:
+    post:
+      tags: [ControlPlane]
+      summary: Initiate partner synchronization (privileged)
+      description: |
+        Accepts a sync request and asynchronously POSTs an acknowledgement
+        to the provided callback address at `/ctrl/synchronize/{syn_id}/acknowledgement`.
+      security:
+        - AuthHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ControlSyncRequest' }
+            examples:
+              example:
+                value:
+                  CallbackAddress: "https://partner.example.com"
+                  SynchronizationId: "2c1b5f39-4c1a-451f-9b9f-2a5d5b7c3ea1"
+      responses:
+        '202': { description: Accepted (ack will be sent asynchronously) }
+        '400': { description: Invalid request or invalid UUID, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: Not authorized or authentication failed, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '415': { description: Content-Type must be application/json, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '500': { description: Internal error, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+      callbacks:
+        onAcknowledgement:
+          # Callback URL is derived from request body
+          '{$request.body#/CallbackAddress}/ctrl/synchronize/{syn_id}/acknowledgement':
+            post:
+              parameters:
+                - name: syn_id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: SynchronizationId (UUID)
+              security:
+                - AuthHeader: []
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema: { $ref: '#/components/schemas/ControlSyncAckBody' }
+                    examples:
+                      example:
+                        value:
+                          AcknowledgementMessage: "Acknowledging synchronization request 2c1b5f39-4c1a-451f-9b9f-2a5d5b7c3ea1"
+              responses:
+                '200':
+                  description: Final status string
+                  content:
+                    text/plain:
+                      schema:
+                        type: string
+                        example: "Synchronization 2c1b5f39-4c1a-451f-9b9f-2a5d5b7c3ea1 Complete"
+                '400': { description: Invalid synchronization id, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+                '403': { description: Authentication failed, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /ctrl/healthcheck:
+    get:
+      tags: [ControlPlane]
+      summary: Health check
+      responses:
+        '200':
+          description: Healthy
+          content:
+            text/plain:
+              schema: { type: string, example: "healthy" }
+
+  # -------------------
+  # Data Plane (/data)
+  # -------------------
+  /data/download/{doc_ref}:
+    get:
+      tags: [DataPlane]
+      summary: Download a document by reference
+      parameters:
+        - name: doc_ref
+          in: path
+          required: true
+          schema:
+            type: string
+            description: Deterministic document hash
+      responses:
+        '200':
+          description: File download
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /data/submit/{submit_hash}:
+    get:
+      tags: [DataPlane]
+      summary: Submit CTF completion hash
+      parameters:
+        - name: submit_hash
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Submission result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  msg: { type: string }
+                required: [success, msg]
+        '403':
+          description: Incorrect submission
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  succes:
+                    type: boolean
+                    description: Note misspelling in implementation ("succes")
+                  msg: { type: string }
+                required: [succes, msg]
+
+  /data/healthcheck:
+    get:
+      tags: [DataPlane]
+      summary: Health check
+      responses:
+        '200':
+          description: Healthy
+          content:
+            text/plain:
+              schema: { type: string, example: "healthy" }
+
+  # -----------------------
+  # Management API (/mgmt)
+  # -----------------------
+  /mgmt/documents:
+    get:
+      tags: [Management]
+      summary: List documents (management)
+      security:
+        - AuthHeader: []
+      responses:
+        '200':
+          description: Docs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Documents:
+                    type: array
+                    items: { $ref: '#/components/schemas/DocumentSummary' }
+                required: [Documents]
+        '403': { description: Authentication failed, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /mgmt/documents/{doc_id}:
+    get:
+      tags: [Management]
+      summary: Get document (management)
+      security:
+        - AuthHeader: []
+      parameters:
+        - name: doc_id
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/DocumentId' }
+      responses:
+        '200':
+          description: Document
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DocumentWithDownload' }
+        '400': { description: Invalid document identifier, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: Authentication failed, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /mgmt/documents/{doc_id}/share:
+    get:
+      tags: [Management]
+      summary: Enable document sharing
+      security:
+        - AuthHeader: []
+      parameters:
+        - name: doc_id
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/DocumentId' }
+      responses:
+        '202': { description: Share scheduled/enacted }
+        '400': { description: Invalid doc id or update failure, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: Authentication failed, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: Document not found, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /mgmt/documents/{doc_id}/unshare:
+    get:
+      tags: [Management]
+      summary: Disable document sharing
+      security:
+        - AuthHeader: []
+      parameters:
+        - name: doc_id
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/DocumentId' }
+      responses:
+        '202': { description: Unshare scheduled/enacted }
+        '400': { description: Invalid doc id or update failure, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: Authentication failed, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: Document not found, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /mgmt/partners/documents:
+    post:
+      tags: [Management]
+      summary: List partner public documents (proxy)
+      description: Negotiates a control-plane token then proxies the partner’s `/ctrl/documents/public`.
+      security:
+        - AuthHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PartnerDocumentsRequest' }
+            examples:
+              example:
+                value:
+                  PartnerUrl: "https://partner.example.com"
+      responses:
+        '200':
+          description: Proxied partner response
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PartnerDocumentsProxyResponse' }
+        '400': { description: Negotiation or format error, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: Authentication failed, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '415': { description: Content-Type must be application/json, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '500': { description: Internal error encountered, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /mgmt/partners/synchronize:
+    post:
+      tags: [Management]
+      summary: Initiate partner synchronization
+      description: Asynchronously calls partner `/ctrl/synchronize` with a computed token.
+      security:
+        - AuthHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PartnerSyncRequest' }
+            examples:
+              example:
+                value:
+                  PartnerUrl: "https://partner.example.com"
+                  SynchronizationMessage: "Please sync now."
+                  SynchronizationId: "2c1b5f39-4c1a-451f-9b9f-2a5d5b7c3ea1"
+      responses:
+        '200':
+          description: Sync initiation message
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg: { type: string }
+                required: [msg]
+        '400': { description: Invalid format or UUID, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: Authentication failed, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '415': { description: Content-Type must be application/json, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '500': { description: Internal error, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /mgmt/init:
+    get:
+      tags: [Management]
+      summary: Get current demo settings
+      responses:
+        '200':
+          description: Settings
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InitResponse' }
+    post:
+      tags: [Management]
+      summary: Initialize or update demo settings
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/InitRequest' }
+      responses:
+        '200':
+          description: Settings after update
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InitResponse' }
+        '415':
+          description: Content-Type must be application/json
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /mgmt/healthcheck:
+    get:
+      tags: [Management]
+      summary: Health check
+      responses:
+        '200':
+          description: Healthy
+          content:
+            text/plain:
+              schema: { type: string, example: "healthy" }
+
+# Global non-standard responses (Bottle handlers return 404/405 for unknown/methods)
+x-notes:
+  methodNotAllowed: "Unmapped methods return 405 with empty body."
+  notFound: "Unknown paths return 404 with JSON error where applicable."

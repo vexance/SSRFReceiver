@@ -1,12 +1,14 @@
 import bottle
-from re import match as regex_match
-from hashlib import sha256, sha384
 import json
 import requests
-import utils
 import datetime
 import asyncio
 import threading
+
+from re import match as regex_match
+from hashlib import sha256, sha384
+
+import Backend.utils as utils
 
 AUTH_TABLE = 'mgmt_auth'
 mgmt_api = bottle.Bottle()
@@ -47,6 +49,7 @@ async def async_do_request(method: str, url: str, headers: str, req_body: str):
 # ListDocuments
 @mgmt_api.route('/documents', method='GET')
 def list_documents() -> str:
+    print(bottle.request.headers['Authorization'])
     authN = utils.authenticate(AUTH_TABLE, bottle.request.headers['Authorization'])
     if authN == False:
         bottle.response.status = 403
@@ -335,5 +338,3 @@ def method_not_supported(url: str = None):
     return None
 
 
-
-mgmt_api.run(host='0.0.0.0', port=8000)

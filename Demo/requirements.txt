@@ -1,0 +1,5 @@
+argparse
+bottle
+requests
+sqlite3
+pyyaml
