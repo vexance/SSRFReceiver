@@ -36,6 +36,12 @@ def openapi_json():
 def swagger_docs(filename):
     return static_file(filename=filename, root='./Swagger')
 
+
+@app.route('/healthcheck', method='GET')
+def healtcheck():
+    return 'healthy'
+
+
 @app.route('<path:re:.+>', method='GET')
 def swagger_redirect(path):
     return redirect('/swagger/index.html')
