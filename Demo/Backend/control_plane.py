@@ -208,8 +208,6 @@ def syn() -> dict:
         dhash_psk = sha256(sha384(psk.encode('utf-8')).hexdigest().encode('utf-8')).hexdigest()
         
         if auth_token != dhash_psk:
-            print(f'inbound token: {auth_token}')
-            print(f'expected hash: {dhash_psk}')
             bottle.response.status = 403
             return {'error': 'Authentication failed.'}
     
@@ -240,9 +238,8 @@ def syn() -> dict:
         asyncio.run_coroutine_threadsafe(async_do_request(method=method, url=callback, headers=req_headers, req_body=req_body), background_event_loop)
 
     except Exception as err:
-        print(f'Synchronize Request Error: {err}')
         bottle.response.status = 500
-        return {'error': 'An internal error occured.'}
+        return {'error': f'An internal error occured: {err}'}
 
     bottle.response.status = 202
 
@@ -261,9 +258,6 @@ def syn_ack(syn_id: str) -> dict:
         thash_psk = sha256(dhash_psk.encode('utf-8')).hexdigest()
         
         if auth_token != thash_psk:
-            print(f'inbound token: {auth_token}')
-            print(f'expected hash: {dhash_psk}')
-            print(f'thash val: {thash_psk}')
             bottle.response.status = 403
             return {'error': 'Authentication failed.'}
 

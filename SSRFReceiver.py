@@ -108,12 +108,10 @@ def echo_body():
 @serve.route('/intercept/<destination:re:.*>', method='POST')
 @serve.route('/intercept/<destination:re:.*>', method='GET')
 def intercept(destination: str):
-    
+    '''Act as HTTP proxy / MitM connections'''
     log_request(f'Intercepted request to {destination}')
-
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-    headers = dict(request.headers)
+    
 
     if destination == 'static':
         logger.info(f'Using static intercept target: {STATIC_INTERCEPT_TARGET}')
@@ -127,31 +125,25 @@ def intercept(destination: str):
     start = at_idx if (at_idx != -1) else 0
     end = colon_idx if (colon_idx != -1) else len(target_host)
 
+    # Update host header with the actual target in the path
+    headers = dict(request.headers)
     headers['Host'] = target_host[start:end]
-    # body = None
-    # try:
-    #     body = request.body
-    # except Exception as err:
-    #     logger.debug(f'Error parsing intercepted request body: {err}')
 
-    method = request.method
-
-    logger.info(f'Relaying to {target_host}')
+    logger.info(f'Proxying to {target_host}')
     try:
         res = requests.request(request.method, f'{destination}?{request.query_string}', headers=request.headers, data=request.body, proxies=INTERCEPT_PROXIES, verify=False)
         response.status = res.status_code
-        response.headers = res.headers
 
+        # Copy response headers over
         for key, value in res.headers.items():
             response.set_header(key, value)
-
 
     except Exception as err:
         logger.warning(f'Exception thrown during interception relay: {err}')
         return 'failure'
     
-    logger.debug(f'Relayed response headers: {res.headers}')
-    logger.debug(f'Relayed response body: {res.text}')
+    logger.debug(f'Target\'s response headers: {res.headers}')
+    logger.debug(f'Target\'s response body: {res.text}')
 
     return res.content
 
